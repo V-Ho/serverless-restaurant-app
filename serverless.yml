@@ -40,3 +40,6 @@ resources:
   Outputs:
     RestaurantsTableName:
       Value: !Ref RestaurantsTable
+
+plugins:
+  - serverless-export-env
