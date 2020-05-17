@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "sls": "serverless"
+    "sls": "serverless",
+    "dotEnv": "sls export-env",
+    "test": "npm run dotEnv && jest"
   },
   "keywords": [],
   "author": "",
