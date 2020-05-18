@@ -2,6 +2,7 @@ const cheerio = require('cheerio')
 const when = require('../steps/when')
 const {init} = require('../steps/init')
 
+console.log = jest.fn()
 describe(`When we invoke the GET / endpoint`, () => {
 
   it(`Should return the index page with 8 restaurants`, async () => {
