@@ -7,6 +7,13 @@ custom:
 provider:
   name: aws
   runtime: nodejs12.x
+  environment:
+    rootUrl:
+      Fn::Join:
+        - ""
+        - - https://
+          - !Ref ApiGatewayRestApi
+          - .execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}
 
   iamRoleStatements:
     - Effect: Allow
