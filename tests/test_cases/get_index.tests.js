@@ -4,6 +4,7 @@ const {init} = require('../steps/init')
 
 console.log = jest.fn()
 describe(`When we invoke the GET / endpoint`, () => {
+  beforeAll(async () => await init())
 
   it(`Should return the index page with 8 restaurants`, async () => {
     const res = await when.we_invoke_get_index()
