@@ -29,6 +29,9 @@ provider:
       Resource:
         - arn:aws:ssm:#{AWS::Region}:#{AWS::AccountId}:parameter/${self:service}/${self:provider.stage}/get-restaurants/config
         - arn:aws:ssm:#{AWS::Region}:#{AWS::AccountId}:parameter/${self:service}/${self:provider.stage}/search-restaurants/config
+    - Effect: Allow
+      Action: events:PutEvents
+      Resource: "*"
 
 functions:
   get-index:
@@ -72,6 +75,17 @@ functions:
             arn: arn:aws:cognito-idp:#{AWS::Region}:#{AWS::AccountId}:userpool/us-east-1_L4SAMABgb
     environment:
       restaurants_table: !Ref RestaurantsTable
+  place-order:
+    handler: functions/place-order.handler
+    events:
+      - http:
+          path: /orders
+          method: post
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: !Ref CognitoAuthorizer
+    environment:
+      bus_name: !Ref EventBus
 
 resources:
   Resources:
@@ -159,10 +173,15 @@ resources:
             - - https://
               - !Ref ApiGatewayRestApi
               - .execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}
+    EventBus:
+      Type: AWS::Events::EventBus
+      Properties:
+        Name: order_events_${self:provider.stage}
 
   Outputs:
     RestaurantsTableName:
       Value: !Ref RestaurantsTable
+      
     CognitoUserPoolId:
       Value: !Ref CognitoUserPool
       
@@ -174,6 +193,9 @@ resources:
     
     CognitoUserPoolServerClientId:
       Value: !Ref ServerCognitoUserPoolClient
+    
+    EventBusName:
+      Value: !Ref EventBus
 
 plugins:
   - serverless-export-env
