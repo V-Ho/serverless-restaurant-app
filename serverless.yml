@@ -32,6 +32,9 @@ provider:
     - Effect: Allow
       Action: events:PutEvents
       Resource: "*"
+    - Effect: Allow
+      Action: sns:Publish
+      Resource: !Ref RestaurantNotificationTopic
 
 functions:
   get-index:
@@ -50,6 +53,12 @@ functions:
       cognito_user_pool_id: !Ref CognitoUserPool
       cognito_client_id: !Ref WebCognitoUserPoolClient
       cognito_server_client_id: !Ref ServerCognitoUserPoolClient
+      orders_api:
+        Fn::Join:
+          - ""
+          - - https://
+            - !Ref ApiGatewayRestApi
+            - .execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}/orders
     iamRoleStatements:
       - Effect: Allow
         Action: execute-api:Invoke
@@ -86,6 +95,19 @@ functions:
             authorizerId: !Ref CognitoAuthorizer
     environment:
       bus_name: !Ref EventBus
+  notify-restaurant:
+    handler: functions/notify-restaurant.handler
+    events:
+      - eventBridge:
+          eventBus: arn:aws:events:#{AWS::Region}:#{AWS::AccountId}:event-bus/order_events_${self:provider.stage}
+          pattern:
+            source:
+              - big-mouth
+            detail-type:
+              - order_placed
+    environment:
+      bus_name: !Ref EventBus
+      restaurant_notification_topic: !Ref RestaurantNotificationTopic
 
 resources:
   Resources:
@@ -177,6 +199,8 @@ resources:
       Type: AWS::Events::EventBus
       Properties:
         Name: order_events_${self:provider.stage}
+    RestaurantNotificationTopic:
+      Type: AWS::SNS::Topic
 
   Outputs:
     RestaurantsTableName:
@@ -196,6 +220,12 @@ resources:
     
     EventBusName:
       Value: !Ref EventBus
+
+    RestaurantNotificationTopicName:
+      Value: !GetAtt RestaurantNotificationTopic.TopicName
+    
+    RestaurantNotificationTopicArn:
+      Value: !Ref RestaurantNotificationTopic
 
 plugins:
   - serverless-export-env
