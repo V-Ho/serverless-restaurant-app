@@ -4,14 +4,15 @@ const URL = require('url')
 const http = require('axios')
 const APP_ROOT = '../../'
 const _ = require('lodash')
+const { promisify } = require('util')
 
 const viaHandler = async (event, functionName) => {
-  const handler = require(`${APP_ROOT}/functions/${functionName}`).handler
+  const handler = promisify(require(`${APP_ROOT}/functions/${functionName}`).handler)
 
   const context = {}
   const response = await handler(event, context)
   const contentType = _.get(response, 'headers.content-type', 'application/json');
-  if (response.body && contentType === 'application/json') {
+  if (_.get(response, 'body') && contentType === 'application/json') {
     response.body = JSON.parse(response.body);
   }
   return response
@@ -68,7 +69,6 @@ const viaHttp = async (relPath, method, opts) => {
   }
 }
 
-// toggles between invoking function locally and remotely
 const we_invoke_get_index = async () => {
   switch (mode) {
     case 'handler':
@@ -79,6 +79,7 @@ const we_invoke_get_index = async () => {
       throw new Error(`unsupported mode: ${mode}`)
   }
 }
+
 const we_invoke_get_restaurants = async () => {
   switch (mode) {
     case 'handler':
@@ -98,7 +99,21 @@ const we_invoke_search_restaurants = async (theme, user) => {
       return await viaHandler({ body }, 'search-restaurants')
     case 'http':
       const auth = user.idToken
-      return await viaHttp('restaurants/search', 'POST', { body, auth } )
+      return await viaHttp('restaurants/search', 'POST', { body, auth })
+    default:
+      throw new Error(`unsupported mode: ${mode}`)
+  }
+}
+
+const we_invoke_place_order = async (user, restaurantName) => {
+  const body = JSON.stringify({ restaurantName })
+
+  switch (mode) {
+    case 'handler':
+      return await viaHandler({ body }, 'place-order')
+    case 'http':
+      const auth = user.idToken
+      return await viaHttp('orders', 'POST', { body, auth })
     default:
       throw new Error(`unsupported mode: ${mode}`)
   }
@@ -107,5 +122,6 @@ const we_invoke_search_restaurants = async (theme, user) => {
 module.exports = {
   we_invoke_get_index,
   we_invoke_get_restaurants,
-  we_invoke_search_restaurants
+  we_invoke_search_restaurants,
+  we_invoke_place_order
 }
